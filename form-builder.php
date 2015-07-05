@@ -6,9 +6,6 @@ Plugin name: Form Builder
 // 
 // 
 
-if (!class_exists('cmb_Meta_Box')) {
-	require_once( 'cmb/custom-meta-boxes.php' );
-}
 if (!class_exists('formbuilder')) {
 	require_once( 'classes/formbuilder.php' );
 }
@@ -66,8 +63,11 @@ add_action('edit_form_advanced' , function($post) {
 	if (get_post_type( $post->ID ) != 'form') {return;}
 	?>
 	<style>
-		#temp_container td {
-			border:1px solid cyan;
+		.temp_container {
+			-webkit-transition: all 300ms ease-in-out;
+			-moz-transition: all 300ms ease-in-out;
+			-o-transition: all 300ms ease-in-out;
+			transition: all 300ms ease-in-out;
 		}
 
 		.dashicons-plus {
@@ -77,6 +77,11 @@ add_action('edit_form_advanced' , function($post) {
 
 		#add_input {
 			text-decoration: none;
+		}
+
+		.edit {
+			width:100%;
+			text-align: center;
 		}
 	</style>
 
@@ -97,29 +102,65 @@ add_action('edit_form_advanced' , function($post) {
 				?>
 				<tr class="temp_container" id="<?php echo $id; ?>" data-json='<?php echo $values; ?>'>
 					<td align="center">
-						<a class="button button-default button-large" id="save_form_button" >Edit</a>
+						<a class="button button-default button-large edit" id="edit_<?php echo $id; ?>" >Edit</a>
 					</td>
 					<td align="center">
 						<div style="padding:15px;">
-							<input type="text" style="width:100%;" name="temp" id="temp" disabled value="<?php echo $name; ?>">
+							<input type="text" style="width:100%;" class="input_name" disabled value="<?php echo $name; ?>">
 						</div>
 					</td>
 					<td align="center">
 						<div style="padding:15px;">
-							<input type="text" style="width:100%;" disabled value="<?php echo $type; ?>">
+							<select style="width:100%;" class="input_type" disabled>
+								<option value="text" <?php selected( $type, 'text' ); ?>>text</option>
+								<option value="email" <?php selected( $type, 'email' ); ?>>email</option>
+								<option value="textarea" <?php selected( $type, 'textarea' ); ?>>textarea</option>
+							</select>
+
 						</div>
 					</td>
 					<td align="center">
 						<a class="remove_input" id="<?php echo $id; ?>_button" data-id="<?php echo $id; ?>" ><span class="dashicons dashicons-minus"></span></a>	
 					</td>
 				</tr>
-				<?php
-			}
-			?>
-		</table>
+				<script>
+					jQuery(document).ready(function($) {
+						jQuery(document).on('click', '#edit_<?php echo $id; ?>', function(event) {
+							if (jQuery(this).hasClass('active')) {
+								jQuery(this).parents('td').siblings('td').children('div').children('.input_name').attr('disabled' , 'disabled');
+								jQuery(this).parents('td').siblings('td').children('div').children('.input_type').attr('disabled' , 'disabled');
+								jQuery(this).text('Edit');
+								jQuery(this).removeClass('active');	
+								var new_val = '{"id":"a","name":"'+jQuery(this).parents('td').siblings('td').children('div').children('.input_name').val()+'","type":"'+ jQuery(this).parents('td').siblings('td').children('div').children('.input_type').val() +'"}'
+								jQuery(this).parents('td').parents('tr').attr('data-json' , new_val);
+								jQuery(this).parents('td').parents('tr').css({'background' : 'transparent'});
+								jQuery('#save_form_button').click();
+							} else {
+								jQuery(this).parents('td').siblings('td').children('div').children('.input_name').removeAttr('disabled');
+								jQuery(this).parents('td').siblings('td').children('div').children('.input_type').removeAttr('disabled');
+								jQuery(this).text('save');
+								jQuery(this).addClass('active');
+								jQuery(this).parents('td').parents('tr').css({'background' : 'tomato'});
+							}
+						});
+});
+
+jQuery(document).ready(function($) {
+	jQuery(document).on('click', '#<?php echo $id; ?>_button', function(event) {
+		event.preventDefault();
+		var data_id = jQuery(this).attr('data-id' );
+		jQuery('#' + data_id ).remove();
+		jQuery('#save_form_button').click();
+	});
+});
+</script>
+<?php
+}
+?>
+</table>
 
 
-		<a class="button button-primary button-large" id="save_form_button" style="float:right;">Save</a>
+<a id="save_form_button" style="display:none;">Save</a>
 <!-- 	<div id="poststuff">
 		<?php the_editor('<h2>Some content</h2>','content'); ?>
 	</div> -->
@@ -187,6 +228,7 @@ add_action('edit_form_advanced' , function($post) {
 				}).done(function(data , status) {
 					console.log("success");
 					jQuery('#app').append(data);
+					jQuery('#save_form_button').click();
 				});
 
 			});
